@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dmag_alert_rule_tree" model="ir.ui.view">
+        <field name="name">dmag.alert.rule.tree</field>
+        <field name="model">dmag.alert.rule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="metric"/>
+                <field name="window_days"/>
+                <field name="baseline_periods"/>
+                <field name="direction"/>
+                <field name="threshold"/>
+                <field name="last_triggered"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_dmag_alert_rule_form" model="ir.ui.view">
+        <field name="name">dmag.alert.rule.form</field>
+        <field name="model">dmag.alert.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_run_now" type="object" string="Kiểm tra ngay" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Đã tắt" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><h1><field name="name" placeholder="VD: Nhịp học giảm mạnh"/></h1></div>
+                    <group>
+                        <group string="Theo dõi">
+                            <field name="metric"/>
+                            <field name="window_days"/>
+                            <field name="baseline_periods"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Kích hoạt khi">
+                            <field name="direction"/>
+                            <field name="threshold"/>
+                            <field name="min_zscore"/>
+                            <field name="min_volume"/>
+                            <field name="cooldown_hours"/>
+                        </group>
+                    </group>
+                    <group string="Gửi tới">
+                        <field name="user_ids" widget="many2many_tags" nolabel="1" colspan="2"/>
+                    </group>
+                    <div class="text-muted">
+                        So sánh giá trị của <b>cửa sổ gần nhất</b> với <b>trung bình các cửa sổ liền trước</b>
+                        (giống Google Analytics Insights). Cảnh báo được đăng vào kênh Discuss
+                        "DMAG · Cảnh báo điều hành" và bật thông báo tức thời cho người nhận.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dmag_alert_tree" model="ir.ui.view">
+        <field name="name">dmag.alert.tree</field>
+        <field name="model">dmag.alert</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="severity == 'critical'" decoration-warning="severity == 'warning'"
+                  decoration-success="severity == 'positive'" decoration-muted="state == 'ack'" create="0">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="severity" widget="badge" decoration-danger="severity == 'critical'"
+                       decoration-warning="severity == 'warning'" decoration-success="severity == 'positive'"
+                       decoration-info="severity == 'info'"/>
+                <field name="message"/>
+                <field name="state" widget="badge"/>
+                <button name="action_ack" type="object" string="Đã xử lý" icon="fa-check" invisible="state == 'ack'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_dmag_alert_search" model="ir.ui.view">
+        <field name="name">dmag.alert.search</field>
+        <field name="model">dmag.alert</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="new" string="Chưa xử lý" domain="[('state', '=', 'new')]"/>
+                <filter name="bad" string="Xấu đi" domain="[('severity', 'in', ('critical', 'warning'))]"/>
+                <group expand="0" string="Nhóm theo">
+                    <filter name="by_rule" string="Quy tắc" context="{'group_by': 'rule_id'}"/>
+                    <filter name="by_severity" string="Mức độ" context="{'group_by': 'severity'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dmag_alert_rule" model="ir.actions.act_window">
+        <field name="name">Quy tắc cảnh báo</field>
+        <field name="res_model">dmag.alert.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <record id="action_dmag_alert" model="ir.actions.act_window">
+        <field name="name">Nhật ký cảnh báo</field>
+        <field name="res_model">dmag.alert</field>
+        <field name="view_mode">tree</field>
+        <field name="context">{'search_default_new': 1}</field>
+    </record>
+</odoo>

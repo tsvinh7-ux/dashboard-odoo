@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dmag_learning_deploy" model="ir.actions.client">
+        <field name="name">Học &amp; Triển khai SPDV</field>
+        <field name="tag">dmag_dashboard.learning_deploy</field>
+    </record>
+
+    <menuitem id="menu_dmag_root" name="Điều hành DMAG" sequence="1"
+              web_icon="dmag_dashboard,static/description/icon.png"
+              groups="group_dmag_dashboard_user"/>
+    <menuitem id="menu_dmag_learning_deploy" parent="menu_dmag_root" sequence="10"
+              action="action_dmag_learning_deploy"/>
+    <menuitem id="menu_dmag_alerts" name="Cảnh báo" parent="menu_dmag_root" sequence="20"/>
+    <menuitem id="menu_dmag_alert_log" parent="menu_dmag_alerts" sequence="1" action="action_dmag_alert"/>
+    <menuitem id="menu_dmag_alert_rules" parent="menu_dmag_alerts" sequence="2" action="action_dmag_alert_rule"
+              groups="group_dmag_dashboard_manager"/>
+    <menuitem id="menu_dmag_config" name="Cấu hình" parent="menu_dmag_root" sequence="90"
+              groups="group_dmag_dashboard_manager"/>
+    <menuitem id="menu_dmag_settings" parent="menu_dmag_config" sequence="1" action="action_dmag_settings"/>
+</odoo>

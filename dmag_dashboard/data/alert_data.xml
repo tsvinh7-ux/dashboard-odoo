@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="channel_dmag_alerts" model="discuss.channel">
+            <field name="name">DMAG · Cảnh báo điều hành</field>
+            <field name="description">Cảnh báo tự động khi chỉ số học &amp; triển khai SPDV trồi sụt bất thường.</field>
+        </record>
+
+        <record id="rule_lessons_drop" model="dmag.alert.rule">
+            <field name="name">Nhịp học giảm mạnh</field>
+            <field name="sequence">1</field>
+            <field name="metric">lessons_done</field>
+            <field name="direction">down</field>
+            <field name="threshold">30</field>
+            <field name="min_volume">5</field>
+        </record>
+        <record id="rule_stalled_up" model="dmag.alert.rule">
+            <field name="name">Học viên ngưng học tăng</field>
+            <field name="sequence">2</field>
+            <field name="metric">stalled</field>
+            <field name="direction">up</field>
+            <field name="threshold">20</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_overdue_up" model="dmag.alert.rule">
+            <field name="name">Đầu việc quá hạn tăng</field>
+            <field name="sequence">3</field>
+            <field name="metric">overdue</field>
+            <field name="direction">up</field>
+            <field name="threshold">20</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_ontime_drop" model="dmag.alert.rule">
+            <field name="name">Tỷ lệ đúng hạn giảm</field>
+            <field name="sequence">4</field>
+            <field name="metric">ontime_rate</field>
+            <field name="direction">down</field>
+            <field name="threshold">10</field>
+        </record>
+        <record id="rule_tasks_done" model="dmag.alert.rule">
+            <field name="name">Tốc độ triển khai biến động</field>
+            <field name="sequence">5</field>
+            <field name="metric">tasks_done</field>
+            <field name="threshold">30</field>
+            <field name="min_volume">5</field>
+        </record>
+        <record id="rule_enrollments" model="dmag.alert.rule">
+            <field name="name">Ghi danh biến động</field>
+            <field name="sequence">6</field>
+            <field name="metric">enrollments</field>
+            <field name="threshold">40</field>
+            <field name="min_volume">5</field>
+        </record>
+        <record id="rule_contracts" model="dmag.alert.rule">
+            <field name="name">Hợp đồng SPDV tháng biến động</field>
+            <field name="sequence">7</field>
+            <field name="metric">contracts</field>
+            <field name="window_days">30</field>
+            <field name="baseline_periods">3</field>
+            <field name="threshold">30</field>
+        </record>
+    </data>
+
+    <record id="ir_cron_dmag_alerts" model="ir.cron">
+        <field name="name">DMAG: Kiểm tra cảnh báo trồi sụt</field>
+        <field name="model_id" ref="model_dmag_alert"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_run_checks()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

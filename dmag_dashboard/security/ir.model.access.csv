@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dmag_alert_rule_user,dmag.alert.rule user,model_dmag_alert_rule,group_dmag_dashboard_user,1,0,0,0
+access_dmag_alert_rule_manager,dmag.alert.rule manager,model_dmag_alert_rule,group_dmag_dashboard_manager,1,1,1,1
+access_dmag_alert_user,dmag.alert user,model_dmag_alert,group_dmag_dashboard_user,1,1,0,0
+access_dmag_alert_manager,dmag.alert manager,model_dmag_alert,group_dmag_dashboard_manager,1,1,1,1

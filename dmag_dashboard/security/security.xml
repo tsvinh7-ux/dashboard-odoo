@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_dmag" model="ir.module.category">
+        <field name="name">DMAG Điều hành</field>
+        <field name="sequence">5</field>
+    </record>
+
+    <record id="group_dmag_dashboard_user" model="res.groups">
+        <field name="name">Xem dashboard</field>
+        <field name="category_id" ref="module_category_dmag"/>
+    </record>
+
+    <record id="group_dmag_dashboard_manager" model="res.groups">
+        <field name="name">Quản trị dashboard &amp; cảnh báo</field>
+        <field name="category_id" ref="module_category_dmag"/>
+        <field name="implied_ids" eval="[(4, ref('group_dmag_dashboard_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="rule_dmag_alert_company" model="ir.rule">
+        <field name="name">DMAG alert: multi-company</field>
+        <field name="model_id" ref="model_dmag_alert"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_dmag_alert_rule_company" model="ir.rule">
+        <field name="name">DMAG alert rule: multi-company</field>
+        <field name="model_id" ref="model_dmag_alert_rule"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

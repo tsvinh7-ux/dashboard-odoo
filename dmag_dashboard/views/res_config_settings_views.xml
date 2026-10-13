@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.dmag</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="DMAG Điều hành" string="DMAG Điều hành" name="dmag_dashboard"
+                     groups="dmag_dashboard.group_dmag_dashboard_manager">
+                    <block title="Phạm vi dữ liệu" name="dmag_scope">
+                        <setting string="Nhóm sản phẩm SPDV"
+                                 help="Đơn bán chứa sản phẩm thuộc các nhóm này được tính là hợp đồng SPDV. Để trống = mọi dịch vụ.">
+                            <field name="dmag_spdv_categ_ids" widget="many2many_tags"/>
+                        </setting>
+                        <setting string="Dự án triển khai" help="Những dự án nào được tính là triển khai SPDV.">
+                            <field name="dmag_project_scope"/>
+                        </setting>
+                    </block>
+                    <block title="Ngưỡng sức khỏe" name="dmag_thresholds">
+                        <setting string="Ngưng học sau (ngày)" help="Không hoàn thành bài nào trong số ngày này = ngưng học.">
+                            <field name="dmag_stall_days"/>
+                        </setting>
+                        <setting string="Không hoạt động sau (ngày)" help="Khách hàng không có hoạt động học/triển khai bị trừ điểm sức khỏe.">
+                            <field name="dmag_idle_days"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_dmag_settings" model="ir.actions.act_window">
+        <field name="name">Thiết lập</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'dmag_dashboard', 'bin_size': False}</field>
+    </record>
+</odoo>
