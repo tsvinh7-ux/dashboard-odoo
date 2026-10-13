@@ -1,14 +1,14 @@
 /** @odoo-module **/
 
 import { Component, useRef, useState } from "@odoo/owl";
-import { fmtDate, fmtMetric, fmtMonth, fmtNum, niceMax } from "./utils";
+import { fmtCompact, fmtDate, fmtMonth, fmtNum, fmtValue, niceMax } from "./utils";
 
 export class Sparkline extends Component {
     static template = "dmag_dashboard.Sparkline";
     static props = { values: Array, tone: { type: String, optional: true } };
 
     get geometry() {
-        const vals = this.props.values.map((v) => (v === null || v === undefined ? null : v));
+        const vals = (this.props.values || []).map((v) => (v === null || v === undefined ? null : v));
         const nums = vals.filter((v) => v !== null);
         const W = 120;
         const H = 32;
@@ -40,6 +40,7 @@ export class TrendChart extends Component {
         previous: Array,
         unit: { type: String, optional: true },
         monthly: { type: Boolean, optional: true },
+        currency: { type: Object, optional: true },
     };
 
     setup() {
@@ -81,7 +82,8 @@ export class TrendChart extends Component {
             : "";
         const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
             y: y(max * f),
-            label: this.props.unit === "percent" ? `${Math.round(max * f)}%` : fmtNum(max * f),
+            label: this.props.unit === "percent" ? `${Math.round(max * f)}%`
+                : this.props.unit === "money" ? fmtCompact(max * f) : fmtNum(max * f),
         }));
         const every = Math.max(1, Math.ceil(n / 7));
         const xlabels = labels
@@ -118,8 +120,8 @@ export class TrendChart extends Component {
             left: `${left}%`,
             alignRight: left > 70,
             label: this.props.monthly ? fmtMonth(this.props.labels[i]) : fmtDate(this.props.labels[i], true),
-            cur: fmtMetric(cur, this.props.unit),
-            prev: fmtMetric(prev, this.props.unit),
+            cur: fmtValue(cur, this.props.unit, this.props.currency),
+            prev: fmtValue(prev, this.props.unit, this.props.currency),
             lx: x(i),
             cy: cur === null || cur === undefined ? null : y(cur),
             py: prev === null || prev === undefined ? null : y(prev),

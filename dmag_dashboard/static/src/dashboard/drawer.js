@@ -2,33 +2,30 @@
 
 import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { ENROLL_STATUS, LEVEL, fmtAgo, fmtCompact, fmtDate, fmtNum } from "./utils";
+import { LEVEL, fmtValue } from "./utils";
 
-/** Level-2 drill-down: a 360° side panel for one customer or one course.
- *  Every row inside opens the native Odoo record (level 3). */
+/** Level-2 drill-down: a generic 360° side panel. The backend returns
+ *  {eyebrow, title, subtitle, actions, gauge, stats, chips, sections[{title, items}]};
+ *  every item opens the native Odoo record (level 3). */
 export class DetailDrawer extends Component {
     static template = "dmag_dashboard.DetailDrawer";
     static props = {
+        board: String,
         kind: String,
         id: Number,
         params: Object,
+        currency: Object,
         onClose: Function,
         onDrill: Function,
-        onOpenCustomer: Function,
     };
 
     setup() {
         this.orm = useService("orm");
-        this.state = useState({ loading: true, data: null });
+        this.state = useState({ loading: true, data: null, error: null });
         this.LEVEL = LEVEL;
-        this.ENROLL_STATUS = ENROLL_STATUS;
-        this.fmtNum = fmtNum;
-        this.fmtCompact = fmtCompact;
-        this.fmtDate = fmtDate;
-        this.fmtAgo = fmtAgo;
         onWillStart(() => this.load(this.props));
         onWillUpdateProps((next) => {
-            if (next.kind !== this.props.kind || next.id !== this.props.id) {
+            if (next.kind !== this.props.kind || next.id !== this.props.id || next.board !== this.props.board) {
                 return this.load(next);
             }
         });
@@ -36,18 +33,31 @@ export class DetailDrawer extends Component {
 
     async load(props) {
         this.state.loading = true;
-        const method = props.kind === "customer" ? "get_customer_detail" : "get_course_detail";
-        this.state.data = await this.orm.call("dmag.dashboard", method, [props.id, props.params]);
-        this.state.loading = false;
+        try {
+            this.state.data = await this.orm.call(`dmag.board.${props.board}`, "get_detail",
+                [props.kind, props.id, props.params]);
+            this.state.error = null;
+        } catch (e) {
+            this.state.error = e.data?.message || e.message || String(e);
+        } finally {
+            this.state.loading = false;
+        }
     }
 
-    open(model, id) {
-        this.props.onDrill({ type: "record", model, id });
+    fmt(v, unit) {
+        return fmtValue(v, unit, this.props.currency);
     }
 
-    onKeydown(ev) {
-        if (ev.key === "Escape") {
-            this.props.onClose();
+    itemValue(item) {
+        if (!item.value) {
+            return "";
+        }
+        return item.value.text !== undefined ? item.value.text : this.fmt(item.value.v, item.value.unit);
+    }
+
+    drill(spec) {
+        if (spec) {
+            this.props.onDrill({ board: this.props.board, ...spec });
         }
     }
 }

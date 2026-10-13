@@ -9,7 +9,7 @@
         <record id="rule_lessons_drop" model="dmag.alert.rule">
             <field name="name">Nhịp học giảm mạnh</field>
             <field name="sequence">1</field>
-            <field name="metric">lessons_done</field>
+            <field name="metric">learning.lessons_done</field>
             <field name="direction">down</field>
             <field name="threshold">30</field>
             <field name="min_volume">5</field>
@@ -17,7 +17,7 @@
         <record id="rule_stalled_up" model="dmag.alert.rule">
             <field name="name">Học viên ngưng học tăng</field>
             <field name="sequence">2</field>
-            <field name="metric">stalled</field>
+            <field name="metric">learning.stalled</field>
             <field name="direction">up</field>
             <field name="threshold">20</field>
             <field name="min_zscore">0</field>
@@ -25,7 +25,7 @@
         <record id="rule_overdue_up" model="dmag.alert.rule">
             <field name="name">Đầu việc quá hạn tăng</field>
             <field name="sequence">3</field>
-            <field name="metric">overdue</field>
+            <field name="metric">learning.overdue</field>
             <field name="direction">up</field>
             <field name="threshold">20</field>
             <field name="min_zscore">0</field>
@@ -33,31 +33,100 @@
         <record id="rule_ontime_drop" model="dmag.alert.rule">
             <field name="name">Tỷ lệ đúng hạn giảm</field>
             <field name="sequence">4</field>
-            <field name="metric">ontime_rate</field>
+            <field name="metric">learning.ontime_rate</field>
             <field name="direction">down</field>
             <field name="threshold">10</field>
         </record>
         <record id="rule_tasks_done" model="dmag.alert.rule">
             <field name="name">Tốc độ triển khai biến động</field>
             <field name="sequence">5</field>
-            <field name="metric">tasks_done</field>
+            <field name="metric">learning.tasks_done</field>
             <field name="threshold">30</field>
             <field name="min_volume">5</field>
         </record>
         <record id="rule_enrollments" model="dmag.alert.rule">
             <field name="name">Ghi danh biến động</field>
             <field name="sequence">6</field>
-            <field name="metric">enrollments</field>
+            <field name="metric">learning.enrollments</field>
             <field name="threshold">40</field>
             <field name="min_volume">5</field>
         </record>
         <record id="rule_contracts" model="dmag.alert.rule">
             <field name="name">Hợp đồng SPDV tháng biến động</field>
             <field name="sequence">7</field>
-            <field name="metric">contracts</field>
+            <field name="metric">learning.contracts</field>
             <field name="window_days">30</field>
             <field name="baseline_periods">3</field>
             <field name="threshold">30</field>
+        </record>
+        <record id="rule_sales_month" model="dmag.alert.rule">
+            <field name="name">Doanh số tháng giảm</field>
+            <field name="sequence">10</field>
+            <field name="metric">sales.sales_amount</field>
+            <field name="window_days">30</field>
+            <field name="baseline_periods">3</field>
+            <field name="direction">down</field>
+            <field name="threshold">25</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_sales_opps" model="dmag.alert.rule">
+            <field name="name">Cơ hội mới sụt giảm</field>
+            <field name="sequence">11</field>
+            <field name="metric">sales.opps_new</field>
+            <field name="direction">down</field>
+            <field name="threshold">30</field>
+            <field name="min_volume">5</field>
+        </record>
+        <record id="rule_sales_stale" model="dmag.alert.rule">
+            <field name="name">Cơ hội nguội tăng</field>
+            <field name="sequence">12</field>
+            <field name="metric">sales.stale</field>
+            <field name="direction">up</field>
+            <field name="threshold">25</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_mkt_leads" model="dmag.alert.rule">
+            <field name="name">Lead mới biến động</field>
+            <field name="sequence">20</field>
+            <field name="metric">marketing.leads_new</field>
+            <field name="threshold">35</field>
+            <field name="min_volume">5</field>
+        </record>
+        <record id="rule_fin_cash" model="dmag.alert.rule">
+            <field name="name">Tiền thu về giảm</field>
+            <field name="sequence">30</field>
+            <field name="metric">finance.cash_in</field>
+            <field name="direction">down</field>
+            <field name="threshold">30</field>
+            <field name="min_volume">1</field>
+        </record>
+        <record id="rule_fin_overdue" model="dmag.alert.rule">
+            <field name="name">Công nợ quá hạn tăng</field>
+            <field name="sequence">31</field>
+            <field name="metric">finance.ar_overdue</field>
+            <field name="direction">up</field>
+            <field name="threshold">15</field>
+            <field name="min_volume">1</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_hr_departures" model="dmag.alert.rule">
+            <field name="name">Nghỉ việc tăng</field>
+            <field name="sequence">40</field>
+            <field name="metric">hr.departures</field>
+            <field name="window_days">30</field>
+            <field name="baseline_periods">3</field>
+            <field name="direction">up</field>
+            <field name="threshold">50</field>
+            <field name="min_volume">2</field>
+            <field name="min_zscore">0</field>
+        </record>
+        <record id="rule_ops_late" model="dmag.alert.rule">
+            <field name="name">Phiếu nhận hàng trễ tăng</field>
+            <field name="sequence">50</field>
+            <field name="metric">ops.late_receipts</field>
+            <field name="direction">up</field>
+            <field name="threshold">25</field>
+            <field name="min_zscore">0</field>
         </record>
     </data>
 

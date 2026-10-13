@@ -6,7 +6,6 @@ from markupsafe import Markup, escape
 
 from odoo import api, fields, models, _
 
-from .dmag_dashboard import METRICS, METRIC_SELECTION
 
 
 def _fmt(value, unit):
@@ -15,6 +14,15 @@ def _fmt(value, unit):
     if unit == 'percent':
         return f"{value:.1f}%".replace('.', ',')
     return f"{value:,.0f}".replace(',', '.') if abs(value) >= 10 else f"{value:.1f}".rstrip('0').rstrip('.').replace('.', ',')
+
+
+def _fmt_money(value):
+    a = abs(value)
+    if a >= 1e9:
+        return f"{value / 1e9:.2f} tỷ".replace('.', ',')
+    if a >= 1e6:
+        return f"{value / 1e6:.1f} tr".replace('.', ',')
+    return _fmt(value, 'count')
 
 
 class DmagAlertRule(models.Model):
@@ -26,7 +34,9 @@ class DmagAlertRule(models.Model):
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
-    metric = fields.Selection(METRIC_SELECTION, string='Chỉ số', required=True)
+    metric = fields.Selection(lambda self: self.env['dmag.board']._all_metric_selection(),
+                              string='Chỉ số', required=True)
+    board = fields.Char(compute='_compute_board', store=True, index=True)
     window_days = fields.Integer('Cửa sổ (ngày)', default=7, required=True,
                                  help="Giá trị hiện tại = chỉ số trong N ngày gần nhất.")
     baseline_periods = fields.Integer('Số kỳ nền', default=4, required=True,
@@ -45,6 +55,11 @@ class DmagAlertRule(models.Model):
     alert_ids = fields.One2many('dmag.alert', 'rule_id')
     last_triggered = fields.Datetime(compute='_compute_last_triggered')
 
+    @api.depends('metric')
+    def _compute_board(self):
+        for rule in self:
+            rule.board = rule.metric.split('.')[0] if rule.metric else False
+
     @api.depends('alert_ids.date')
     def _compute_last_triggered(self):
         for rule in self:
@@ -53,11 +68,14 @@ class DmagAlertRule(models.Model):
     def _evaluate(self, engine, D):
         """GA-Insights style check: last window vs mean of the K previous windows."""
         self.ensure_one()
-        meta = METRICS[self.metric]
+        key = self.metric.split('.', 1)[1]
+        meta = engine._dmag_metrics().get(key)
+        if not meta:
+            return None
         now = D['sc']['now']
         w = timedelta(days=self.window_days)
-        cur = engine._metric(D, self.metric, now - w, now)
-        base = [engine._metric(D, self.metric, now - w * (i + 1), now - w * i)
+        cur = engine._metric(D, key, now - w, now)
+        base = [engine._metric(D, key, now - w * (i + 1), now - w * i)
                 for i in range(1, self.baseline_periods + 1)]
         base = [b for b in base if b is not None]
         if cur is None or not base:
@@ -85,13 +103,24 @@ class DmagAlertRule(models.Model):
         else:
             severity = 'critical' if abs(change) >= 2 * self.threshold else 'warning'
         unit = '%' if meta['unit'] != 'percent' else ' điểm %'
+        if meta['unit'] == 'money':
+            fmt_cur, fmt_base = _fmt_money(cur), _fmt_money(mean)
+        elif meta['unit'] == 'days':
+            fmt_cur, fmt_base = _('%s ngày', _fmt(cur, 'count')), _('%s ngày', _fmt(mean, 'count'))
+        else:
+            fmt_cur, fmt_base = _fmt(cur, meta['unit']), _fmt(mean, meta['unit'])
         window = _('%s ngày qua', self.window_days) if self.window_days != 7 else _('7 ngày qua')
-        message = _('%(label)s %(window)s %(verb)s %(chg)s%(unit)s so với trung bình %(k)s kỳ trước (%(cur)s so với %(base)s).',
-                    label=meta['label'], window=window, verb=_('tăng') if move == 'up' else _('giảm'),
-                    chg=_fmt(abs(change), 'count'), unit=unit, k=len(base),
-                    cur=_fmt(cur, meta['unit']), base=_fmt(mean, meta['unit']))
+        if not mean:
+            message = _('%(label)s %(window)s: %(cur)s — cả %(k)s kỳ trước đều bằng 0.',
+                        label=meta['label'], window=window, cur=fmt_cur, k=len(base))
+        else:
+            message = _('%(label)s %(window)s %(verb)s %(chg)s%(unit)s so với trung bình %(k)s kỳ trước (%(cur)s so với %(base)s).',
+                        label=meta['label'], window=window, verb=_('tăng') if move == 'up' else _('giảm'),
+                        chg=_fmt(abs(change), 'count'), unit=unit, k=len(base),
+                        cur=fmt_cur, base=fmt_base)
         return {
-            'rule_id': self.id, 'title': self.name, 'metric': self.metric, 'severity': severity,
+            'rule_id': self.id, 'title': self.name, 'metric': key, 'severity': severity,
+            'drill': {'type': 'kpi', 'key': key, 'board': engine._dmag_key},
             'value': cur, 'baseline': round(mean, 2), 'change': round(change, 1), 'zscore': z and round(z, 2),
             'direction': move, 'message': message, 'window_days': self.window_days,
         }
@@ -111,7 +140,7 @@ class DmagAlert(models.Model):
     rule_id = fields.Many2one('dmag.alert.rule', required=True, ondelete='cascade', index=True)
     company_id = fields.Many2one(related='rule_id.company_id', store=True)
     name = fields.Char(related='rule_id.name', store=True, string='Cảnh báo')
-    metric = fields.Selection(METRIC_SELECTION, string='Chỉ số')
+    metric = fields.Selection(lambda self: self.env['dmag.board']._all_metric_selection(), string='Chỉ số')
     date = fields.Datetime('Thời điểm', default=fields.Datetime.now, required=True)
     value = fields.Float('Giá trị')
     baseline = fields.Float('Nền')
@@ -128,19 +157,21 @@ class DmagAlert(models.Model):
     def _run_checks(self, rule_ids=None):
         Rule = self.env['dmag.alert.rule'].sudo()
         rules = Rule.browse(rule_ids) if rule_ids else Rule.search([])
-        engine = self.env['dmag.dashboard'].sudo()
         now = fields.Datetime.now()
         created = self.browse()
-        by_company = defaultdict(Rule.browse)
+        groups = defaultdict(Rule.browse)
         for rule in rules:
-            by_company[rule.company_id or self.env.company] |= rule
-        for company, crules in by_company.items():
-            eng = engine.with_company(company).with_context(allowed_company_ids=[company.id])
-            sc = eng._scope({'period': 7})
+            groups[(rule.company_id or self.env.company, rule.board)] |= rule
+        for (company, board_key), crules in groups.items():
+            board = self.env['dmag.board'].sudo()._board(board_key).with_company(company).with_context(
+                allowed_company_ids=[company.id])
+            if not board._available():
+                continue
+            sc = board._scope({'period': 7})
             since = min(now - timedelta(days=r.window_days * (r.baseline_periods + 1)) for r in crules)
-            D = eng._load(sc, since)
+            D = board._load(sc, since)
             for rule in crules.with_company(company):
-                res = rule._evaluate(eng, D)
+                res = rule._evaluate(board, D)
                 if not res:
                     continue
                 if rule.alert_ids.filtered(lambda a: a.date >= now - timedelta(hours=rule.cooldown_hours)):

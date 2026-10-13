@@ -2,5 +2,12 @@ from . import res_company
 from . import res_config_settings
 from . import project_task
 from . import slide_channel_partner
-from . import dmag_dashboard
+from . import board_base
+from . import board_executive
+from . import board_sales
+from . import board_marketing
+from . import board_learning
+from . import board_finance
+from . import board_hr
+from . import board_ops
 from . import dmag_alert

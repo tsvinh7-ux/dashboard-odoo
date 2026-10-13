@@ -1,13 +1,14 @@
 {
     'name': 'DMAG · Dashboard Điều hành',
-    'version': '17.0.1.0.0',
+    'version': '17.0.2.0.0',
     'category': 'Productivity',
-    'summary': 'Dashboard điều hành DMAG: tiến trình học & triển khai SPDV, điểm nóng, cảnh báo trồi sụt',
+    'summary': 'Bộ dashboard điều hành DMAG theo vai trò: Tổng quan, Kinh doanh, Marketing, Học & Triển khai, Tài chính, Nhân sự, Mua hàng & Kho',
     'description': """
 Dashboard điều hành theo nhận diện DMAG.
 
-* Bảng "Học & Triển khai SPDV": hành trình khách hàng từ ký hợp đồng -> học -> triển khai -> nghiệm thu
-* Chỉ số so sánh kỳ trước, sparkline, điểm sức khỏe khách hàng, điểm nóng
+* 7 bảng theo vai trò: Tổng quan điều hành, Kinh doanh, Marketing, Học & Triển khai SPDV,
+  Tài chính, Nhân sự, Mua hàng & Kho. Bảng nào thiếu ứng dụng nguồn sẽ tự ẩn dữ liệu.
+* Chỉ số so sánh kỳ trước, sparkline, điểm nóng, phễu, tuổi nợ, xếp hạng
 * Drill-down 3 tầng: chỉ số -> danh sách / hồ sơ 360 khách hàng, khóa học -> bản ghi gốc
 * Quy tắc cảnh báo trồi sụt (kiểu Google Analytics Insights), gửi Discuss + thông báo tức thời
     """,

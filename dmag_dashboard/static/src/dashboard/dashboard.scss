@@ -162,6 +162,39 @@
     cursor: pointer;
 }
 
+// board switcher (only the boards of the user's roles)
+.o_dmag .dmag-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    max-width: 1480px;
+    margin: 14px auto 0;
+    &__item {
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        background: transparent;
+        color: #fff !important;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0.85;
+        &:hover {
+            background: rgba(255, 255, 255, 0.12);
+            opacity: 1;
+        }
+        &.is-active {
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--dmag-navy) !important;
+            font-weight: 600;
+            opacity: 1;
+        }
+        &.is-off {
+            opacity: 0.5;
+        }
+    }
+}
+
 // ---------------------------------------------------------------- body
 .o_dmag .dmag-body {
     // auto side-margins disable flex stretch, so the width must be explicit
@@ -216,17 +249,9 @@
 .o_dmag .dmag-grid {
     display: grid;
     gap: 16px;
-    &--5-7 {
-        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    }
-    &--6-6 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    // column ratios come inline from the board definition; stack on narrow screens
     @media (max-width: 1100px) {
-        &--5-7,
-        &--6-6 {
-            grid-template-columns: minmax(0, 1fr);
-        }
+        grid-template-columns: minmax(0, 1fr) !important;
     }
 }
 
@@ -330,6 +355,15 @@
         color: var(--dmag-muted);
         align-self: center;
     }
+    &__money {
+        margin-left: 4px;
+        color: var(--dmag-ink);
+    }
+    &__board {
+        font-size: 11px;
+        color: var(--dmag-muted);
+        margin-top: 2px;
+    }
 }
 
 // ---------------------------------------------------------------- KPI
@@ -365,9 +399,9 @@
         border-radius: 0 0 3px 3px;
         background: var(--kpi-accent, var(--dmag-blue));
     }
-    &--learn { --kpi-accent: var(--dmag-learn); }
-    &--deploy { --kpi-accent: var(--dmag-deploy); }
-    &--sale { --kpi-accent: var(--dmag-navy); }
+    &--blue { --kpi-accent: var(--dmag-blue); }
+    &--cyan { --kpi-accent: var(--dmag-cyan); }
+    &--navy { --kpi-accent: var(--dmag-navy); }
     &:hover {
         border-color: var(--dmag-blue-100);
         transform: translateY(-2px);
@@ -426,6 +460,10 @@
     &--good { color: var(--dmag-good); background: var(--dmag-good-bg); }
     &--bad { color: var(--dmag-bad); background: var(--dmag-bad-bg); }
     &--neutral { color: var(--dmag-ink-2); background: var(--dmag-grid); }
+    &--sm {
+        font-size: 11px;
+        padding: 0 6px;
+    }
     .fa {
         font-size: 10px;
     }
@@ -542,6 +580,217 @@
     }
 }
 
+// ranked horizontal bars
+.o_dmag .dmag-bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    &__row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 92px;
+        align-items: center;
+        gap: 12px;
+        border: 0;
+        background: transparent;
+        padding: 7px 8px;
+        border-radius: 8px;
+        text-align: left;
+        cursor: pointer;
+        &:hover:not([disabled]) {
+            background: var(--dmag-blue-050);
+        }
+        &[disabled] {
+            cursor: default;
+        }
+    }
+    &__label {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+    &__track {
+        height: 10px;
+        border-radius: 0 4px 4px 0;
+        background: var(--dmag-blue-050);
+        overflow: hidden;
+    }
+    &__bar {
+        display: block;
+        height: 100%;
+        border-radius: 0 4px 4px 0;
+        background: var(--dmag-blue);
+    }
+    &__val {
+        text-align: right;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// receivable aging: one segmented bar + legend
+.o_dmag .dmag-aging {
+    display: flex;
+    gap: 2px;
+    height: 18px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    &__seg {
+        display: block;
+        min-width: 4px;
+        &--good { background: var(--dmag-good); }
+        &--info { background: var(--dmag-blue); }
+        &--warn { background: var(--dmag-warn); }
+        &--bad { background: var(--dmag-bad); }
+    }
+    &__legend {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        button {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 14px 1fr auto 44px;
+            align-items: center;
+            gap: 10px;
+            border: 0;
+            background: transparent;
+            padding: 7px 8px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            &:hover:not([disabled]) {
+                background: var(--dmag-blue-050);
+            }
+            &[disabled] {
+                cursor: default;
+                opacity: 0.55;
+            }
+        }
+    }
+    &__dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+    }
+    &__label {
+        font-weight: 600;
+    }
+    &__val {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    &__pct {
+        text-align: right;
+        color: var(--dmag-muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// executive: one card per department board
+.o_dmag .dmag-boards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+.o_dmag .dmag-boardcard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    padding: 14px;
+    border: 1px solid var(--dmag-line);
+    border-radius: 12px;
+    background: var(--dmag-surface);
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    &:hover {
+        border-color: var(--dmag-blue-100);
+        transform: translateY(-2px);
+    }
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2px;
+    }
+    &__icon {
+        width: 30px;
+        height: 30px;
+        flex: none;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--dmag-blue-050);
+        color: var(--dmag-blue);
+    }
+    &__sig {
+        margin-left: auto;
+        display: flex;
+        gap: 4px;
+        .dmag-pill {
+            margin-left: 0;
+            padding: 1px 8px;
+            font-size: 11px;
+        }
+    }
+    &__metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        border-top: 1px dashed var(--dmag-grid);
+        padding-top: 6px;
+    }
+    &__val {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        b {
+            font-size: 15px;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+    &__go {
+        margin-top: auto;
+        color: var(--dmag-blue);
+        font-weight: 600;
+        font-size: 12px;
+    }
+}
+
+.o_dmag .dmag-trend__caption {
+    font-size: 12px;
+    color: var(--dmag-muted);
+    margin: 2px 0 6px;
+    b {
+        color: var(--dmag-ink);
+    }
+}
+
+.o_dmag .dmag-empty--big {
+    padding: 48px 24px;
+    font-size: 14px;
+    .fa {
+        font-size: 28px;
+        color: var(--dmag-blue);
+        display: block;
+        margin-bottom: 10px;
+    }
+}
+
 // time-to-value tiles under the funnel
 .o_dmag .dmag-speed {
     display: grid;
@@ -560,7 +809,7 @@
         border-radius: 10px;
         background: var(--dmag-bg);
     }
-    button.dmag-speed__item {
+    &__item.is-link {
         cursor: pointer;
         &:hover {
             border-color: var(--dmag-blue-100);
@@ -783,10 +1032,13 @@
     color: var(--dmag-bad) !important;
 }
 .o_dmag .dmag-good {
-    color: var(--dmag-good);
+    color: var(--dmag-good) !important;
 }
 .o_dmag .dmag-warn {
-    color: var(--dmag-warn);
+    color: var(--dmag-warn) !important;
+}
+.o_dmag .dmag-info {
+    color: var(--dmag-info) !important;
 }
 
 .o_dmag .dmag-meter {
@@ -807,8 +1059,12 @@
         border-radius: 3px;
         background: var(--dmag-learn);
     }
-    &--deploy &__fill {
+    &--deploy &__fill,
+    &--cyan &__fill {
         background: var(--dmag-deploy);
+    }
+    &--bad &__fill {
+        background: var(--dmag-bad);
     }
     &__val {
         width: 36px;
@@ -847,8 +1103,10 @@
     font-weight: 600;
     margin-left: 6px;
     &--good { color: var(--dmag-good); background: var(--dmag-good-bg); }
-    &--watch { color: var(--dmag-warn); background: var(--dmag-warn-bg); }
-    &--risk { color: var(--dmag-bad); background: var(--dmag-bad-bg); }
+    &--watch,
+    &--warn { color: var(--dmag-warn); background: var(--dmag-warn-bg); }
+    &--risk,
+    &--bad { color: var(--dmag-bad); background: var(--dmag-bad-bg); }
 }
 
 .o_dmag .dmag-chip {
@@ -1060,6 +1318,9 @@
     }
     &__reasons {
         grid-column: 1 / -1;
+    }
+    &__health--nogauge {
+        grid-template-columns: 1fr;
     }
 }
 

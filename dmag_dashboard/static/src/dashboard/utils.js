@@ -43,6 +43,27 @@ export function fmtMetric(v, unit) {
     return unit === "percent" ? fmtPct(v) : fmtNum(v);
 }
 
+/** Format any value by unit; money uses the company currency symbol. */
+export function fmtValue(v, unit, currency) {
+    if (v === null || v === undefined || v === false) {
+        return "—";
+    }
+    switch (unit) {
+        case "money": {
+            const sym = currency?.symbol || "";
+            return currency?.position === "before" ? `${sym}${fmtCompact(v)}` : `${fmtCompact(v)} ${sym}`.trim();
+        }
+        case "percent":
+            return fmtPct(v);
+        case "days":
+            return `${NF1.format(v)} ngày`;
+        case "hours":
+            return `${NF1.format(v)} giờ`;
+        default:
+            return fmtNum(v);
+    }
+}
+
 export function fmtDelta(delta, unit) {
     if (delta === null || delta === undefined) {
         return "";
@@ -92,18 +113,19 @@ export function fmtAgo(days) {
     return `${Math.round(days / 30)} tháng trước`;
 }
 
-/** Round an axis maximum up to a clean number (1, 2, 2.5, 5 x 10^n). */
+/** Axis maximum split into 4 clean steps (1, 2, 5 x 10^n), so every tick is a round number. */
 export function niceMax(v) {
     if (!v || v <= 0) {
         return 4;
     }
-    const exp = Math.pow(10, Math.floor(Math.log10(v)));
-    for (const m of [1, 2, 2.5, 5, 10]) {
-        if (v <= m * exp) {
-            return m * exp;
+    const raw = v / 4;
+    const exp = Math.pow(10, Math.floor(Math.log10(raw)));
+    for (const m of [1, 2, 5, 10]) {
+        if (raw <= m * exp) {
+            return Math.max(4, m * exp * 4);
         }
     }
-    return 10 * exp;
+    return 40 * exp;
 }
 
 export const LEVEL = {

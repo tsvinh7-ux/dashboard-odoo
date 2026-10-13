@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ===================== Sparkline ===================== -->
+    <t t-name="dmag_dashboard.Sparkline">
+        <t t-set="g" t-value="geometry"/>
+        <svg t-if="g" class="dmag-spark" t-att-class="'dmag-spark--' + (props.tone or 'neutral')"
+             t-attf-viewBox="0 0 {{g.W}} {{g.H}}" preserveAspectRatio="none" aria-hidden="true">
+            <polygon class="dmag-spark__area" t-att-points="g.area"/>
+            <polyline class="dmag-spark__line" t-att-points="g.line"/>
+            <circle class="dmag-spark__dot" t-att-cx="g.last[0]" t-att-cy="g.last[1]" r="3"/>
+        </svg>
+        <div t-else="" class="dmag-spark dmag-spark--empty"/>
+    </t>
+
+    <!-- ===================== Trend chart ===================== -->
+    <t t-name="dmag_dashboard.TrendChart">
+        <t t-set="m" t-value="model"/>
+        <t t-set="tt" t-value="tooltip"/>
+        <div class="dmag-trend">
+            <svg t-ref="svg" class="dmag-trend__svg" t-attf-viewBox="0 0 {{W}} {{H}}"
+                 t-on-mousemove="onMove" t-on-mouseleave="onLeave" role="img">
+                <g class="dmag-trend__grid">
+                    <t t-foreach="m.ticks" t-as="tick" t-key="tick_index">
+                        <line t-att-x1="pad.l" t-att-x2="W - pad.r" t-att-y1="tick.y" t-att-y2="tick.y"/>
+                        <text t-att-x="pad.l - 8" t-att-y="tick.y + 4" text-anchor="end" t-esc="tick.label"/>
+                    </t>
+                    <t t-foreach="m.xlabels" t-as="xl" t-key="xl.i">
+                        <text t-att-x="xl.x" t-att-y="H - 8" text-anchor="middle" t-esc="xl.label"/>
+                    </t>
+                </g>
+                <path class="dmag-trend__area" t-att-d="m.area"/>
+                <path class="dmag-trend__prev" t-att-d="m.prev"/>
+                <path class="dmag-trend__cur" t-att-d="m.cur"/>
+                <circle t-if="m.end and state.hover === null" class="dmag-trend__end"
+                        t-att-cx="m.end.x" t-att-cy="m.end.y" r="5"/>
+                <g t-if="tt">
+                    <line class="dmag-trend__cross" t-att-x1="tt.lx" t-att-x2="tt.lx" t-att-y1="pad.t" t-att-y2="H - pad.b"/>
+                    <circle t-if="tt.py !== null" class="dmag-trend__pdot" t-att-cx="tt.lx" t-att-cy="tt.py" r="4"/>
+                    <circle t-if="tt.cy !== null" class="dmag-trend__end" t-att-cx="tt.lx" t-att-cy="tt.cy" r="5"/>
+                </g>
+            </svg>
+            <div t-if="tt" class="dmag-tooltip" t-att-class="{'dmag-tooltip--right': tt.alignRight}"
+                 t-attf-style="left: {{tt.left}}">
+                <div class="dmag-tooltip__title" t-esc="tt.label"/>
+                <div class="dmag-tooltip__row"><span class="dmag-key dmag-key--cur"/>Kỳ này<b t-esc="tt.cur"/></div>
+                <div class="dmag-tooltip__row"><span class="dmag-key dmag-key--prev"/>Kỳ trước<b t-esc="tt.prev"/></div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ===================== Board ===================== -->
+    <t t-name="dmag_dashboard.Board">
+        <div class="o_action o_dmag h-100 overflow-auto">
+            <header class="dmag-hero">
+                <div class="dmag-hero__inner">
+                    <div class="dmag-hero__brand">
+                        <span class="dmag-logo">DMAG</span>
+                        <div>
+                            <div class="dmag-hero__eyebrow" t-esc="state.data and state.data.board.eyebrow or 'Dashboard điều hành · Định Vị Mới'"/>
+                            <h1 class="dmag-hero__title">
+                                <i t-if="state.data" class="fa me-2" t-att-class="state.data.board.icon"/>
+                                <t t-esc="state.data and state.data.board.title or (props.action and props.action.name) or ''"/>
+                            </h1>
+                        </div>
+                    </div>
+                    <div class="dmag-hero__controls">
+                        <div class="dmag-seg" role="tablist" aria-label="Khoảng thời gian">
+                            <t t-foreach="periods" t-as="p" t-key="p.value">
+                                <button type="button" class="dmag-seg__btn"
+                                        t-att-class="{'is-active': state.period === p.value}"
+                                        t-att-aria-selected="state.period === p.value ? 'true' : 'false'"
+                                        t-on-click="() => this.setPeriod(p.value)" t-esc="p.label"/>
+                            </t>
+                        </div>
+                        <select t-if="state.data and state.data.filter" class="dmag-select" t-on-change="setFilter"
+                                t-att-aria-label="state.data.filter.label">
+                            <option value="0" t-att-selected="!state.filterId" t-esc="state.data.filter.label"/>
+                            <t t-foreach="state.data.filter.options" t-as="o" t-key="o.id">
+                                <option t-att-value="o.id" t-att-selected="state.filterId === o.id" t-esc="o.name"/>
+                            </t>
+                        </select>
+                        <button type="button" class="dmag-icon-btn" t-on-click="() => this.load()" title="Làm mới">
+                            <i class="fa fa-refresh" t-att-class="{'fa-spin': state.refreshing}"/>
+                        </button>
+                    </div>
+                </div>
+                <nav t-if="state.data and state.data.menu.length > 1" class="dmag-switcher" aria-label="Bảng điều khiển">
+                    <t t-foreach="state.data.menu" t-as="b" t-key="b.key">
+                        <button type="button" class="dmag-switcher__item"
+                                t-att-class="{'is-active': b.key === boardKey, 'is-off': !b.available}"
+                                t-on-click="() => this.openBoard(b)">
+                            <i class="fa" t-att-class="b.icon"/> <t t-esc="b.title"/>
+                        </button>
+                    </t>
+                </nav>
+                <div t-if="state.data" class="dmag-hero__meta">
+                    Cập nhật <t t-esc="updatedAt"/> · so sánh với <t t-esc="periodLabel"/> · tự làm mới mỗi 5 phút
+                </div>
+            </header>
+
+            <div t-if="state.loading" class="dmag-body">
+                <div class="dmag-skeleton-row">
+                    <t t-foreach="[1,2,3,4,5,6]" t-as="i" t-key="i"><div class="dmag-card dmag-skeleton"/></t>
+                </div>
+            </div>
+            <div t-elif="state.error" class="dmag-body">
+                <div class="dmag-card dmag-error"><i class="fa fa-warning me-2"/><t t-esc="state.error"/></div>
+            </div>
+            <div t-else="" class="dmag-body" t-att-class="{'is-refreshing': state.refreshing}">
+                <t t-set="d" t-value="state.data"/>
+
+                <!-- Signals (GA-like insights) -->
+                <t t-if="d.kpis.length">
+                    <section class="dmag-signals" t-if="d.signals.length" aria-label="Tín hiệu cần chú ý">
+                        <div class="dmag-section-label"><i class="fa fa-bolt"/> Tín hiệu tự động
+                            <span class="dmag-count" t-esc="d.signals.length"/></div>
+                        <div class="dmag-signals__list">
+                            <t t-foreach="signals" t-as="sig" t-key="sig_index">
+                                <button type="button" class="dmag-signal" t-att-class="'dmag-signal--' + sig.severity"
+                                        t-on-click="() => this.drillSignal(sig)">
+                                    <i class="fa dmag-signal__icon" t-att-class="SEVERITY[sig.severity].icon"/>
+                                    <span class="dmag-signal__body">
+                                        <span class="dmag-signal__title">
+                                            <t t-esc="sig.title"/>
+                                            <span class="dmag-signal__tag" t-esc="SEVERITY[sig.severity].label"/>
+                                        </span>
+                                        <span class="dmag-signal__msg">
+                                            <t t-esc="sig.message"/>
+                                            <b t-if="sig.money" class="dmag-signal__money" t-esc="fmt(sig.money, 'money')"/>
+                                        </span>
+                                        <span t-if="sig.board !== boardKey" class="dmag-signal__board">
+                                            <i class="fa fa-folder-o"/> <t t-esc="sig.board_title"/>
+                                        </span>
+                                    </span>
+                                    <i class="fa fa-angle-right dmag-signal__go"/>
+                                </button>
+                            </t>
+                        </div>
+                        <button t-if="d.signals.length > 4" type="button" class="dmag-link-btn"
+                                t-on-click="() => { this.state.allSignals = !this.state.allSignals }">
+                            <t t-if="state.allSignals">Thu gọn</t>
+                            <t t-else="">Xem thêm <t t-esc="d.signals.length - 4"/> tín hiệu</t>
+                        </button>
+                    </section>
+                    <section t-else="" class="dmag-signals dmag-signals--calm">
+                        <i class="fa fa-check-circle"/> Không có biến động bất thường — mọi chỉ số nằm trong dao động bình thường.
+                    </section>
+
+                    <!-- KPI row -->
+                    <section class="dmag-kpis" aria-label="Chỉ số chính">
+                        <t t-foreach="d.kpis" t-as="kpi" t-key="kpi.board + kpi.key">
+                            <button type="button" class="dmag-card dmag-kpi" t-att-class="'dmag-kpi--' + kpi.accent"
+                                    t-on-click="() => this.drillKpi(kpi)" t-att-title="kpi.hint">
+                                <span class="dmag-kpi__label">
+                                    <span class="dmag-kpi__group" t-esc="kpi.tag"/>
+                                    <t t-esc="kpi.label"/>
+                                </span>
+                                <span class="dmag-kpi__value" t-esc="fmt(kpi.value, kpi.unit)"/>
+                                <span class="dmag-kpi__row">
+                                    <t t-if="kpi.previous !== null">
+                                        <span class="dmag-delta" t-att-class="'dmag-delta--' + kpi.tone">
+                                            <i class="fa" t-att-class="deltaIcon(kpi.delta)"/>
+                                            <t t-if="kpi.delta !== null" t-esc="fmtDelta(kpi.delta, kpi.unit)"/>
+                                            <t t-else="">mới</t>
+                                        </span>
+                                        <span class="dmag-kpi__prev">kỳ trước <t t-esc="fmt(kpi.previous, kpi.unit)"/></span>
+                                    </t>
+                                    <span t-else="" class="dmag-kpi__prev">Số liệu hiện tại</span>
+                                </span>
+                                <Sparkline values="kpi.spark" tone="kpi.tone"/>
+                                <span class="dmag-kpi__sub" t-esc="fmtSub(kpi.sub)"/>
+                            </button>
+                        </t>
+                    </section>
+                </t>
+
+                <!-- Panels -->
+                <t t-foreach="d.rows" t-as="row" t-key="row_index">
+                    <section class="dmag-grid" t-att-style="gridStyle(row)">
+                        <t t-foreach="row.panels" t-as="panel" t-key="panel.id or panel_index">
+                            <t t-call="dmag_dashboard.Panel"/>
+                        </t>
+                    </section>
+                </t>
+
+                <section t-if="d.glossary.length" class="dmag-glossary">
+                    <button type="button" class="dmag-link-btn" t-on-click="() => { this.state.glossary = !this.state.glossary }">
+                        <i class="fa fa-book me-1"/> Cách tính các chỉ số <i class="fa" t-att-class="state.glossary ? 'fa-angle-up' : 'fa-angle-down'"/>
+                    </button>
+                    <dl t-if="state.glossary" class="dmag-glossary__list">
+                        <t t-foreach="d.glossary" t-as="g" t-key="g_index">
+                            <div><dt t-esc="g.label"/><dd t-esc="g.hint"/></div>
+                        </t>
+                    </dl>
+                </section>
+            </div>
+
+            <DetailDrawer t-if="state.drawer" board="state.drawer.board" kind="state.drawer.kind" id="state.drawer.id"
+                          params="params" currency="state.data.currency"
+                          onClose.bind="closeDrawer" onDrill.bind="drill"/>
+        </div>
+    </t>
+
+    <!-- ===================== Panels ===================== -->
+    <t t-name="dmag_dashboard.Panel">
+        <div class="dmag-card dmag-panel" t-att-class="'dmag-panel--' + panel.type">
+            <div t-if="panel.title" class="dmag-panel__head">
+                <div>
+                    <h2 t-esc="panel.title"/>
+                    <p t-if="panel.subtitle" t-esc="panel.subtitle"/>
+                </div>
+                <div t-if="panel.summary" class="dmag-health-summary">
+                    <t t-foreach="panel.summary" t-as="s" t-key="s_index">
+                        <span class="dmag-pill" t-att-class="'dmag-pill--' + s.tone"><i class="fa" t-att-class="s.icon"/> <t t-esc="s.text"/></span>
+                    </t>
+                </div>
+                <div t-if="panel.type === 'trend'" class="dmag-legend">
+                    <span><span class="dmag-key dmag-key--cur"/>Kỳ này</span>
+                    <span><span class="dmag-key dmag-key--prev"/>Kỳ trước</span>
+                </div>
+            </div>
+
+            <!-- empty / not available -->
+            <div t-if="panel.type === 'empty'" class="dmag-empty dmag-empty--big">
+                <i class="fa fa-plug"/>
+                <div t-esc="panel.text"/>
+            </div>
+
+            <!-- funnel -->
+            <t t-elif="panel.type === 'funnel'">
+                <div t-if="panel.empty" class="dmag-empty" t-esc="panel.empty"/>
+                <ol t-else="" class="dmag-funnel" t-att-class="{'dmag-funnel--value': panel.value_unit}">
+                    <t t-foreach="panel.stages" t-as="stage" t-key="stage.key">
+                        <li>
+                            <button type="button" class="dmag-funnel__row" t-on-click="() => this.drill(stage.drill)"
+                                    t-att-disabled="!stage.count">
+                                <span class="dmag-funnel__label">
+                                    <span class="dmag-funnel__step" t-esc="stage_index + 1"/>
+                                    <t t-esc="stage.label"/>
+                                </span>
+                                <span class="dmag-funnel__track">
+                                    <span class="dmag-funnel__bar" t-attf-style="width: {{Math.max(2, 100 * stage.count / funnelMax(panel))}}%"/>
+                                </span>
+                                <span class="dmag-funnel__num" t-esc="stage.count"/>
+                                <span class="dmag-funnel__pct" t-esc="panel.value_unit ? fmt(stage.value, panel.value_unit) : funnelConversion(panel, stage_index)"/>
+                            </button>
+                        </li>
+                    </t>
+                </ol>
+                <t t-call="dmag_dashboard.Tiles"/>
+            </t>
+
+            <!-- trend -->
+            <t t-elif="panel.type === 'trend'">
+                <t t-set="tr" t-value="trendOf(panel)"/>
+                <div class="dmag-tabs">
+                    <t t-foreach="panel.tabs" t-as="grp" t-key="grp_index">
+                        <span class="dmag-tabs__group" t-esc="grp.group"/>
+                        <t t-foreach="grp.keys" t-as="k" t-key="k">
+                            <button type="button" class="dmag-tab" t-att-class="{'is-active': tr.key === k}"
+                                    t-on-click="() => this.setTrend(panel, k)" t-esc="panel.series[k].label"/>
+                        </t>
+                    </t>
+                </div>
+                <div class="dmag-trend__caption">
+                    <t t-esc="tr.label"/>
+                    <t t-if="tr.total !== null"> · kỳ này <b t-esc="tr.total"/> · kỳ trước <t t-esc="tr.prevTotal"/></t>
+                    <t t-else=""> · giá trị tại cuối mỗi mốc</t>
+                </div>
+                <TrendChart labels="state.data.buckets" current="tr.current" previous="tr.previous"
+                            monthly="tr.monthly" unit="tr.unit" currency="state.data.currency"/>
+            </t>
+
+            <!-- ranked bars -->
+            <t t-elif="panel.type === 'bars'">
+                <div t-if="!panel.items.length" class="dmag-empty" t-esc="panel.empty"/>
+                <ul t-else="" class="dmag-bars">
+                    <t t-foreach="panel.items" t-as="it" t-key="it_index">
+                        <li>
+                            <button type="button" class="dmag-bars__row" t-on-click="() => this.drill(it.drill)"
+                                    t-att-disabled="!it.drill">
+                                <span class="dmag-bars__label">
+                                    <span class="dmag-strong" t-esc="it.label"/>
+                                    <span t-if="it.sub" class="dmag-muted" t-esc="fmtSub(it.sub)"/>
+                                </span>
+                                <span class="dmag-bars__track">
+                                    <span class="dmag-bars__bar" t-attf-style="width: {{Math.max(1.5, 100 * Math.abs(it.value) / barsMax(panel))}}%"/>
+                                </span>
+                                <span class="dmag-bars__val" t-esc="fmt(it.value, panel.unit)"/>
+                            </button>
+                        </li>
+                    </t>
+                </ul>
+            </t>
+
+            <!-- aging -->
+            <t t-elif="panel.type === 'aging'">
+                <t t-set="tot" t-value="agingTotal(panel)"/>
+                <div t-if="!tot" class="dmag-empty">Không có công nợ phải thu.</div>
+                <t t-else="">
+                    <div class="dmag-aging">
+                        <t t-foreach="panel.buckets" t-as="b" t-key="b_index">
+                            <span t-if="b.value" class="dmag-aging__seg" t-att-class="'dmag-aging__seg--' + b.tone"
+                                  t-attf-style="flex-grow: {{b.value / tot}}" t-att-title="b.label"/>
+                        </t>
+                    </div>
+                    <ul class="dmag-aging__legend">
+                        <t t-foreach="panel.buckets" t-as="b" t-key="b_index">
+                            <li>
+                                <button type="button" t-on-click="() => this.drill(b.drill)" t-att-disabled="!b.value">
+                                    <span class="dmag-aging__dot" t-att-class="'dmag-aging__seg--' + b.tone"/>
+                                    <span class="dmag-aging__label" t-esc="b.label"/>
+                                    <span class="dmag-aging__val" t-esc="fmt(b.value, panel.unit)"/>
+                                    <span class="dmag-aging__pct"><t t-esc="Math.round(100 * b.value / tot)"/>%</span>
+                                </button>
+                            </li>
+                        </t>
+                    </ul>
+                </t>
+                <t t-call="dmag_dashboard.Tiles"/>
+            </t>
+
+            <!-- department cards (executive) -->
+            <t t-elif="panel.type === 'boards'">
+                <div class="dmag-boards">
+                    <t t-foreach="panel.items" t-as="b" t-key="b.key">
+                        <button type="button" class="dmag-boardcard" t-on-click="() => this.openBoard(b)">
+                            <span class="dmag-boardcard__head">
+                                <span class="dmag-boardcard__icon"><i class="fa" t-att-class="b.icon"/></span>
+                                <span class="dmag-strong" t-esc="b.title"/>
+                                <span class="dmag-boardcard__sig">
+                                    <span t-if="b.signals.critical" class="dmag-pill dmag-pill--bad" title="Nghiêm trọng"><i class="fa fa-exclamation-triangle"/> <t t-esc="b.signals.critical"/></span>
+                                    <span t-if="b.signals.warning" class="dmag-pill dmag-pill--warn" title="Cần chú ý"><i class="fa fa-exclamation-circle"/> <t t-esc="b.signals.warning"/></span>
+                                    <span t-if="!b.signals.critical and !b.signals.warning" class="dmag-pill dmag-pill--good"><i class="fa fa-check-circle"/> Ổn</span>
+                                </span>
+                            </span>
+                            <t t-foreach="b.metrics" t-as="m" t-key="m_index">
+                                <span class="dmag-boardcard__metric">
+                                    <span class="dmag-muted" t-esc="m.label"/>
+                                    <span class="dmag-boardcard__val">
+                                        <b t-esc="fmt(m.value, m.unit)"/>
+                                        <span t-if="m.delta !== null and m.delta !== undefined" class="dmag-delta dmag-delta--sm"
+                                              t-att-class="'dmag-delta--' + m.tone">
+                                            <i class="fa" t-att-class="deltaIcon(m.delta)"/> <t t-esc="fmtDelta(m.delta, m.unit)"/>
+                                        </span>
+                                    </span>
+                                </span>
+                            </t>
+                            <span class="dmag-boardcard__go">Mở bảng <i class="fa fa-angle-right"/></span>
+                        </button>
+                    </t>
+                </div>
+            </t>
+
+            <!-- table -->
+            <t t-elif="panel.type === 'table'">
+                <div t-if="!panel.rows.length" class="dmag-empty" t-esc="panel.empty"/>
+                <div t-else="" class="dmag-table-wrap">
+                    <table class="dmag-table">
+                        <thead>
+                            <tr>
+                                <t t-foreach="panel.columns" t-as="c" t-key="c.key">
+                                    <th t-att-class="c.align ? 'text-' + c.align : ''" t-esc="c.label"/>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="rowsOf(panel)" t-as="r" t-key="r.id + '_' + r_index">
+                                <tr t-att-class="{'is-clickable': r.open}" t-on-click="() => this.drill(r.open)">
+                                    <t t-foreach="panel.columns" t-as="c" t-key="c.key">
+                                        <t t-set="cl" t-value="cell(r, c)"/>
+                                        <td t-att-class="(c.align ? 'text-' + c.align : '') + (cl.tone ? ' dmag-' + cl.tone : '')">
+                                            <t t-if="c.type === 'meter'">
+                                                <div t-if="cl.v !== null and cl.v !== undefined" class="dmag-meter"
+                                                     t-att-class="cl.variant ? 'dmag-meter--' + cl.variant : ''">
+                                                    <span class="dmag-meter__track"><span class="dmag-meter__fill" t-attf-style="width: {{Math.min(100, cl.v)}}%"/></span>
+                                                    <span class="dmag-meter__val"><t t-esc="cl.v"/>%</span>
+                                                </div>
+                                                <div t-if="cl.sub" class="dmag-muted" t-esc="cl.sub"/>
+                                            </t>
+                                            <t t-elif="c.type === 'score'">
+                                                <span class="dmag-score" t-att-class="'dmag-score--' + cl.level" t-att-title="LEVEL[cl.level].label">
+                                                    <i class="fa" t-att-class="LEVEL[cl.level].icon"/> <t t-esc="cl.v"/>
+                                                </span>
+                                            </t>
+                                            <t t-elif="c.type === 'chips'">
+                                                <t t-if="cl.v and cl.v.length">
+                                                    <t t-foreach="cl.v.slice(0, 2)" t-as="ch" t-key="ch_index">
+                                                        <span class="dmag-chip" t-att-class="'dmag-chip--' + ch.tone" t-esc="ch.text"/>
+                                                    </t>
+                                                    <span t-if="cl.v.length > 2" class="dmag-chip" t-att-title="cl.v.slice(2).map(x => x.text).join(' · ')">+<t t-esc="cl.v.length - 2"/></span>
+                                                </t>
+                                                <span t-else="" class="dmag-muted" t-esc="cl.empty or '—'"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-if="cl.avatar and cl.tone === 'bad'" class="dmag-avatar dmag-avatar--empty"><i class="fa fa-user-times"/></span>
+                                                <span t-elif="cl.avatar" class="dmag-avatar" t-esc="initial(cl.v)"/>
+                                                <span t-att-class="{'dmag-strong': c_index === 0, 'dmag-num': c.align === 'end'}" t-esc="cellText(cl, c)"/>
+                                                <div t-if="cl.sub" class="dmag-muted" t-esc="cl.sub"/>
+                                            </t>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    <button t-if="panel.limit and panel.rows.length > panel.limit" type="button" class="dmag-link-btn"
+                            t-on-click="() => this.toggleRows(panel)">
+                        <t t-if="state.expanded[panel.id]">Thu gọn</t>
+                        <t t-else="">Xem tất cả <t t-esc="panel.rows.length"/> dòng</t>
+                    </button>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="dmag_dashboard.Tiles">
+        <div t-if="panel.tiles and panel.tiles.length" class="dmag-speed"
+             t-attf-style="grid-template-columns: repeat({{panel.tiles.length}}, minmax(0, 1fr))">
+            <t t-foreach="panel.tiles" t-as="tile" t-key="tile_index">
+                <button type="button" class="dmag-speed__item" t-att-class="{'is-alert': tile.alert, 'is-link': tile.drill}"
+                        t-on-click="() => this.drill(tile.drill)" t-att-title="tile.hint or ''">
+                    <span class="dmag-speed__val" t-esc="fmt(tile.value, tile.unit)"/>
+                    <span class="dmag-speed__lbl" t-esc="tile.label"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+    <!-- ===================== Drawer (level-2 drill-down) ===================== -->
+    <t t-name="dmag_dashboard.DetailDrawer">
+        <div class="dmag-drawer">
+            <div class="dmag-drawer__scrim" t-on-click="props.onClose"/>
+            <aside class="dmag-drawer__panel" role="dialog" aria-modal="true">
+                <button type="button" class="dmag-drawer__close" t-on-click="props.onClose" title="Đóng"><i class="fa fa-times"/></button>
+                <div t-if="state.loading" class="dmag-drawer__loading"><i class="fa fa-circle-o-notch fa-spin"/></div>
+                <div t-elif="state.error" class="dmag-error"><t t-esc="state.error"/></div>
+                <t t-else="">
+                    <t t-set="d" t-value="state.data"/>
+                    <div class="dmag-drawer__head">
+                        <div class="dmag-hero__eyebrow" t-esc="d.eyebrow"/>
+                        <h2 t-esc="d.title"/>
+                        <div t-if="d.subtitle" class="dmag-muted" t-esc="d.subtitle"/>
+                        <t t-foreach="d.actions or []" t-as="a" t-key="a_index">
+                            <button type="button" class="dmag-btn me-2" t-on-click="() => this.drill(a.drill)">
+                                <i class="fa me-1" t-att-class="a.icon"/> <t t-esc="a.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div t-if="d.gauge or (d.stats and d.stats.length)" class="dmag-drawer__health"
+                         t-att-class="{'dmag-drawer__health--nogauge': !d.gauge}">
+                        <div t-if="d.gauge" class="dmag-gauge" t-att-class="'dmag-gauge--' + d.gauge.level">
+                            <span class="dmag-gauge__num" t-esc="d.gauge.score"/>
+                            <span class="dmag-gauge__lbl"><i class="fa" t-att-class="LEVEL[d.gauge.level].icon"/> <t t-esc="LEVEL[d.gauge.level].label"/></span>
+                        </div>
+                        <div class="dmag-drawer__stats">
+                            <t t-foreach="d.stats" t-as="s" t-key="s_index">
+                                <div><b t-att-class="s.tone ? 'dmag-' + s.tone : ''" t-esc="fmt(s.value, s.unit)"/><span t-esc="s.label"/></div>
+                            </t>
+                        </div>
+                        <div t-if="d.chips and d.chips.length" class="dmag-drawer__reasons">
+                            <t t-foreach="d.chips" t-as="r" t-key="r_index">
+                                <span class="dmag-chip" t-att-class="'dmag-chip--' + r.tone" t-esc="r.text"/>
+                            </t>
+                        </div>
+                    </div>
+                    <div t-if="d.empty" class="dmag-empty" t-esc="d.empty"/>
+                    <t t-foreach="d.sections or []" t-as="sec" t-key="sec_index">
+                        <h3><t t-esc="sec.title"/> <span class="dmag-count" t-esc="sec.items.length"/></h3>
+                        <div t-if="!sec.items.length" class="dmag-empty" t-esc="sec.empty"/>
+                        <ul t-else="" class="dmag-list">
+                            <t t-foreach="sec.items" t-as="it" t-key="it_index">
+                                <li t-att-class="{'is-clickable': it.drill}" t-on-click="() => this.drill(it.drill)">
+                                    <div class="dmag-list__main">
+                                        <div class="dmag-strong"><t t-esc="it.title"/>
+                                            <span t-if="it.badge" class="dmag-chip" t-att-class="'dmag-chip--' + it.badge.tone" t-esc="it.badge.text"/></div>
+                                        <div class="dmag-muted">
+                                            <t t-if="it.link"><a href="#" t-on-click.prevent.stop="() => this.drill(it.link.drill)" t-esc="it.link.text"/> · </t>
+                                            <t t-esc="it.sub"/>
+                                        </div>
+                                    </div>
+                                    <div t-if="it.meter" class="dmag-meter dmag-meter--sm" t-att-class="it.meter.variant ? 'dmag-meter--' + it.meter.variant : ''">
+                                        <span class="dmag-meter__track"><span class="dmag-meter__fill" t-attf-style="width: {{it.meter.pct}}%"/></span>
+                                        <span class="dmag-meter__val"><t t-esc="it.meter.pct"/>%</span>
+                                    </div>
+                                    <span t-if="it.value" class="dmag-num" t-att-class="it.value.tone ? 'dmag-chip dmag-chip--' + it.value.tone : ''" t-esc="itemValue(it)"/>
+                                </li>
+                            </t>
+                        </ul>
+                    </t>
+                </t>
+            </aside>
+        </div>
+    </t>
+</templates>
